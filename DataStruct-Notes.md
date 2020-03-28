@@ -410,4 +410,583 @@ long pow(long x, int n){
 }
 ```
 
-表、栈和队列
+## 表、栈和队列
+
+抽象数据类型(abstract data type, ADT) 是带有一组操作的对象的集合。
+
+### 链表 list
+
+形容$A_0,A_1,A_2,A_3, …,A_{N-1}$的链表，表的大小是N。N=0的表为空表(empty list)。除空表外的任何表，称$A_{i-1}$为$A_i$的**前驱**，称$A_{i+1}$为$A_i$的**后继**。
+
+数组可以使得printList以线性时间执行，使得findKth以常数时间执行。然而，数组执行插入和删除花费的时间却很高，因为插入和删除导致元素位置发生变化。最坏的情况下，在位置0处插入一个元素需要将整个数组后移一个位置以空出空间来；而删除第一个元素，需要将表中的所有元素向前移动一个位置，因此这两种操作最坏情况为O(N)。
+
+为了避免插入和删除的线性开销，我们需要允许链表可以不连续存储，否则表的部分或全部需要整体移动。
+
+链表有一系列不必再内存中相连的结点组成。每一个几点均含有表元素和到该元素后继的结点的**链**(link)，称之为next。最后一个单元的next指向NULL。
+
+![image-20200325212122050](DataStruct-Notes.assets/image-20200325212122050.png)
+
+执行printList()或find(x), 我们只需要从链表的第一个结点开始，然后使用next遍历链表即可。与数组一样，这种操作的花费时间是线性的。然而像findKth(i)寻找某个i位置的元素操作花费时间则效率会变低，为O(i)，因为findKth常常按照顺序执行。
+
+remove方法可以通过修改next指向的位置来实现。如删除链表中元素$A_2$.
+
+![image-20200325213133756](DataStruct-Notes.assets/image-20200325213133756.png)
+
+insert方法使用new操作符，从系统申请一个新的结点，并执行两次next调整。如增加新元素X，虚线表示删除原来的链next
+
+![image-20200325213521450](DataStruct-Notes.assets/image-20200325213521450.png)
+
+### STL实现的向量和链表
+
+C++提供一个标准模板库(Standard Template Library, STL). 在STL中，链表ADT的实现由两种——vector和list
+
+vector实现了链表ADT的可增长的数组，使用vector可以在常量的时间里索引某个值。但是它在插入新元素和删除已有元素的代价很高，除非操作发生在vector容器末尾。
+
+list实现了链表ADT的双向链表。如果已知发生变化的元素的具体位置，插入和删除操作代价就非常小。但是list不容易索引某个值。
+
+一般STL容器具备的方法：
+
+-   `int size() const `: 返回容器内元素个数。
+-   `void clear()`: 删除容器内所有元素。
+
+-   `bool empty()`: 如果容器没有元素，则返回true，否则返回false。
+
+vector和list都支持在常量的时间内在末尾添加或删除项。支持在常量的时间内访问表的前端和尾端的元素：
+
+-   `void push_back(const Object &x)`: 在容器末尾添加x。
+-   `void pop_back()`: 删除容器的末尾的 对象。
+-   `const Object & back() const`: 返回容器的尾尾的对象。
+-   `const Object & front() const `: 返回容器的前端对象。
+
+双向链表list可以高效的改变链表的前端：
+
+-   `void push_front(const Object &x)`: 在双向链表的前端添加x。
+-   `void pop_front()` ：删除双向链表的前端的对象。
+
+vector可以进行高效的索引：
+
+-   `Object & operator[] (int idx)`: 返回vector容器中idx索引位置的对象。
+-   `Object & at(int idx)`: 返回vector容器中idx索引位置的对象。
+-   `int capacity() const`: 返回vector容器内部容量。
+-   `void reserve(int new Capacity)`: 设定vector的新容量。
+
+#### 迭代器 Iterator
+
+STL中的迭代器是用来指明当前循环到容器的索引位置，类似于指针变量。
+
+容器中对iterator定义的方法：
+
+`iterator begin()`: 返回指向容器的第一项的迭代器。
+
+`iterator end()`: 返回指向容器的终止的标志，注意是容器最后一个元素的后继位置，不代表实际元素。看起来就是指向了容器边界以外。
+
+迭代器的方法，假设`iterator itr`：
+
+`itr++, ++itr`: 推进迭代器itr到下一个位置。
+
+`*itr`：返回存储在迭代器itr指向位置的对象的引用。
+
+`itr1==itr2`: 是否二者指向同一个位置，若是则返回true， 否则返回false。
+
+`itr1!=itr2`: 与上同理。
+
+需要迭代器的容器操作：
+
+`iterator insert(iterator pos, const Object &x)`: 添加x到表中迭代器pos所指向位置之前的位置。这对list是常量级操作，但是对vector却不是。返回值是指向插入项位置的迭代器。
+
+`iterator erase(iterator pos)`: 删除pos指向位置的对象元素。这对list是常量级操作，对vector则不是。返回值是调用函数之前pos指向元素的下一个对象元素的位置。
+
+`iterator erase(iterator start, iterator end)`: 删除所有从位置start开始直到位置end(左闭右开，不包括end)的所有元素。
+
+**const_iterator**
+
+`const_iterator`的`operator*`返回常量引用，意味着该类型的迭代器的引用`*itr`不能出现在赋值语句的左边。而且，编译器要求必须使用`const_iterator`来遍历常量集合。
+
+#### vector 向量实现
+
+将重新实现的类模板命名为Vector。
+
+Vector是基本数组的可增长形式，通过一个指针变量来分配的内存块。数组的容量和当前的数组内对象数量存储在Vector里。
+
+Vector实现基本函数——`size()，clear()，back()，pop_back，push_back和empty()`，实现复制构造函数和operator=提供深复制。同时提供析构函数回收数组。
+
+Vector提供resize()函数来改变Vector的大小。提供reserve()函数来改变Vector容量。实现方式为给基本数组分配新的更大的内存块，并将旧内存块的内容复制到新块中，最后释放旧块的内存。
+
+Vector提供operator[]的实现
+
+Vector提供支持嵌套的iterator和const_iterator类型，并提供相关联的begin和end方法。
+
+```cpp
+template <typename Object>
+class Vector{
+public:
+    explicit Vector(int initSize = 0):theSize(initSize), theCapacity(initSize +
+        SPARE_CAPACITY){
+            objects = new Object[theCapacity];
+        }
+    Vector(const Vector & rhs): objects(NULL){
+        operator=(rhs);
+    }
+    ~Vector(){
+        delete[] objects;
+    }
+    
+    const Vector & operator= (const Vector &rhs){
+        if(this != rhs){
+            delete [] objects;
+            theSize = rhs.size();
+            theCapacity = rhs.theCapacity;
+            
+            objects = new Object[capacity()];
+            for(int k = 0; k < size(); k++)
+                objects[k] = rhs.objects[k];
+        }
+        
+        return *this;
+    }
+    
+    Object & operator[] (int index){
+        return objects[index];
+    }
+    const Object & operator[](int index) const{
+        return objects[index];
+    }
+    
+    bool empty(){
+        return size()==0;
+    }
+    
+    int resize(int newSize){
+        if(newSize > theCapacity)
+            reserve(newSize*2+1);
+        theSize = newSize;
+    }
+    
+    void reserve(int newCapacity){
+        if(newCapacity < theSize)
+        {
+            return ;
+        }
+        Object *oldArray = objects;
+        objects = new Object[newCapacity];
+        for(int k = 0; k < theSize; k++){
+            objects[k] = *(oldArray+k);
+        }
+        theCapacity = newCapacity;
+        delete [] oldArray;
+    }
+    
+    int capacity() const {
+        return theCapacity;
+    }
+    
+    int size() const {
+        return theSize;
+    }
+    
+    void push_back(const Object &x){
+        if(theSize == theCapacity)
+            reserve(2*theCapacity +1);
+        objects[theSize++] = x;
+    }
+    
+    void pop_back(){
+        theSize--;
+    }
+    
+    const Object & back() const {
+        return objects[theSize-1];
+    }
+    
+    typedef Object * iterator;
+    typedef const Object * const_iterator;
+    
+    iterator begin(){
+        return &objects[0];
+    }
+    const iterator begin() const {
+        return &objects[0];
+    }
+    iterator end(){
+        return &objects[size()];
+    }
+    const iterator end() const{
+        return &objects[size()];
+    }
+    
+    enum { SPARE_CAPACITY = 16 };
+    
+private:
+    int theSize = 0;
+    int theCapacity = 0;
+    Object *objects;
+};
+
+```
+
+为了实现一个Vector，在其内部设计了已经存储元素的个数theSize，容器的最大容量theCapacity，基本类型数组objects。
+
+Vector类的默认构造函数参数为用户自定义的存储大小，并将其标识为explicit，表明不可隐式转换。重载了运算符 = ，等同于定义了拷贝构造函数，重新定义类内成员基本数组objects，并拷贝源对象的内容到本对象中，返回this指针。
+
+析构函数释放掉基本数组内存空间。
+
+reserve函数用来扩展/缩小容器容量，前提要保证数据不丢失即数据量不能缩小先保存原基本数组指针，向系统申请新的参数为newcapacity大小的基本数组，并将旧数组元素挨个拷贝到新数组，更新容量大小，最后删除旧的数组。
+
+resize函数重新设定容器内使用范围，如果重新设定的范围超过容器容量，那么扩展至二倍大小。
+
+重载operator[]，可以利用[]来进行数据索引
+
+const修饰返回值和类内成员不可更改来标识常量
+
+将模板类型Object的指针类型重新定义为iterator，标识为迭代器。
+
+使用内置类型iterator和`const_iterator`声明的begin方法和end方法，分别返回类内基本数组首个元素地址和数组有效元素后继的起始地址。
+
+#### list 双向链表实现
+
+由于链表的结点是用户从系统堆heap区申请的内存空间，其数量是不定的，所以不能通过指针来增减指向的位置。设计iterator类，该类抽象了位置的概念，是一个公有的嵌套类。该类存储指向某个节点的指针，且尾部是有效位置，所以应该在末尾增加额外的节点。在表的前端也增加一个节点，在逻辑上表示开始，这样会避免某些特例，极大简化代码。额外的节点被称为哨兵节点，头部的节点称为表头节点(header node)，末端的节点称为尾节点(tail node)。
+
+![image-20200327175249838](DataStruct-Notes.assets/image-20200327175249838.png)
+
+Node类是使用struct声明的，struct是C遗留产物，默认成员为公有；而class默认成员为私有。在List内Node为私有的，外部不能访问之。
+
+```cpp
+private:
+    struct Node{
+        Object data;
+        Node *prev;
+        Node *next;
+        Node(const Object & d = Object(), Node *p = NULL, Node *n = NULL ):
+        data(d), prev(p), next(n){}
+    };
+```
+
+data为结点的数据，prev为指向前驱元素的指针，next为指向后继元素的指针。
+
+Node结构体的构造函数有三个参数，可以定义好三个成员变量。
+
+`iterator`和`const_iterator`区别在于iterator类型的迭代器是可以更改其内部成员的，所以`const_iterator`是基类，`iterator`继承之，重载`*`运算符。
+
+在List类内定义三个数据成员——theSize容器内元素数量，head指向头部节点的指针，tail指向尾部节点的指针。
+
+begin()和end()函数返回迭代器，迭代器的类型是iterator还是const_iterator由声明变量时决定，在定义该函数时，使用const修饰是否改变类内成员即可重载函数类型。返回的迭代器由传入链表表头或表尾元素的指针的构造函数实例化的对象。
+
+**const_iterator类**
+
+```cpp
+public:
+    class const_iterator{
+    public:
+        const_iterator(): current(NULL){}
+        const Object & operator* () const{
+            return retrieve();
+        }
+        const_iterator & operator++ () {
+            current = current->next;
+            return *this;
+        }
+        
+        const_iterator operator++ (int){
+//            不是通过new 申请heap 后缀运算符先要使用原来的对象，使用完后自加
+            const_iterator old = *this;
+            // 调用重载过的++运算符
+            ++( *this);
+            return old;
+        }
+        
+        bool operator== (const const_iterator & rhs) const{
+            return current == rhs.current;
+        }
+        
+        bool operator!= (const const_iterator &rhs) const{
+            return !(*this==rhs);
+        }
+        
+    protected:
+        Node *current;
+        
+        Object & retrieve() const {
+            return current->data;
+        }
+        const_iterator(Node *p):current(p){}
+        
+        friend class List<Object>;
+    };
+```
+
+
+
+`const_iterator(Node *p):current(p){}`，这个构造函数是构造指向pNode的迭代器，仅仅在begin和end函数的实现中用到，所以该构造函数不应该被其他外部类访问，所以将其设置为protected成员，只有派生类内才能访问，其他类不允许访问。但是在外部List类begin()和end()成员函数需要访问之，所以声明List类为const_iterator的友元`friend class List<Object>;`，这样外部List就可以访问protected下的构造函数。
+
+current为指向Node类型的指针。是List类用于遍历Node链表的指针，是迭代器指向Node元素的真实指针。
+
+retrieve函数返回当前迭代器指向的Node元素的数据。
+
+const_iterator的公有操作符重载: `==,++,!=,*`，对于++操作符，前缀和后缀是完全不同的，C++通过给前缀形式指定空参数表，后缀形式指定一个匿名int参数来区分。这个int参数永远也不使用，其存在的意义仅仅是给出不同的标识。
+
+`*`解引用，意为读取迭代器指向的元素Object，返回对象的引用，与retrieve()函数一致。
+
+`++`后缀运算符，迭代器Node指针后移一个元素，即current指向next，返回对象的引用。前缀运算符，定义一个局部变量保存旧迭代器的上下文，通过this指针调用后缀自加运算完成指针后移，最后返回旧迭代器的实例，系统会自动回收这类stack区变量。
+
+`==`判断迭代器是否相同，参数为目标迭代器，只需判断二者的实际指针current是否是同一个指针即可。
+
+`!=`调用`==`完成判断。
+
+**iterator类**
+
+继承自const_iterator基类，同样其带参数Node类型指针的构造函数需设置为protected，并声明List类为友元类。
+
+```cpp
+class iterator:public const_iterator{
+    public:
+        iterator(){}
+        Object & operator *(){
+            return this->retrieve();
+        }
+        const Object & operator*() const{
+            return const_iterator::operator*();
+        }
+        
+        iterator & operator++ (){
+            this->current = this->current->next;
+            return *this;
+        }
+        
+        iterator & operator-- (){
+            this->current = this->current->prev;
+            return *this;
+        }
+        
+        iterator operator++ (int){
+            iterator old = *this;
+            ++(*this);
+            return old;
+        }
+    	iterator operator-- (int){
+            iterator old = *this;
+            --(*this);
+            return old;
+        }
+        
+        
+    protected:
+        iterator(Node *p):const_iterator(p){}
+        friend class List<Object>;
+        
+    };
+```
+
+重载的`*`运算符解引用，返回的引用可以修改其内容。
+
+同时提供const的返回。
+
+其他操作运算符返回类型改变为iterator类型。
+
+**List 类**
+
+类内主要实现构造函数，拷贝构造函数，并通过迭代器完成对链表元素的读取写入等操作。
+
+```cpp
+	List(){
+        init();
+    }
+    ~List(){
+        clear();
+        delete head;
+        delete tail;
+    }
+    List(const List & rhs){
+        init();
+//        使用重载的=运算符
+        *this = rhs;
+    }
+    
+//  const 修饰返回地址不可变
+    const List & operator= (const List & rhs){
+//        判断地址是否相同来决定是否是同一个对象
+        if(this == &rhs){
+            return *this;
+        }
+        clear();
+        for(const_iterator it = rhs.begin(); it != rhs.end(); ++it){
+            push_back(*it);
+        }
+        
+        return *this;
+    }
+    
+    iterator begin(){
+        return iterator(head->next);
+    }
+    const_iterator begin() const{
+        return const_iterator(head->next);
+    }
+    
+    iterator end(){
+        return iterator(tail);
+    }
+    const_iterator end() const{
+        return const_iterator(tail);
+    }
+    
+    int size(){
+        return theSize;
+    }
+    bool empty(){
+        return size() == 0;
+    }
+    
+    Object & front(){
+        return *begin();
+    }
+    const Object & front() const{
+        return *begin();
+    }
+    Object & back(){
+        //        end是界外起始位置 back返回最后一个有效元素
+        return *(--end());
+    }
+    const Object & back() const{
+        return *(--end());
+    }
+    void push_front(const Object & x){
+        insert(begin(), x);
+    }
+    void push_back(const Object & x){
+        insert(end(), x);
+    }
+    void pop_front(){
+        erase(begin());
+    }
+    void pop_back(){
+        erase(back());
+    }
+    iterator insert(iterator it, const Object & x){
+        Node *p = it.current;
+        theSize++;
+        //        插入prev节点的next 即p节点的prev位置
+        Node *temp = new Node;
+        temp->data = x;
+        temp->next = p;
+        temp->prev = p->prev;
+        p->prev->next = temp;
+        p->prev = temp;
+        //        浓缩成一句话就是
+        //        return iterator(p->prev = p->prev->next = new Node(x, p->prev, p));
+        return iterator(temp);
+    }
+    
+    iterator erase(iterator it){
+        Node *p = it.current;
+        iterator rtnitr(p->next);
+        
+        p->prev->next = p->next;
+        p->next->prev = p->prev;
+        delete p;
+        theSize--;
+        return rtnitr;
+    }
+    iterator erase(iterator start, iterator end){
+        iterator it;
+        for(it = start; it != end;){
+            earse(it);
+        }
+        return it;
+    }
+    
+    void clear(){
+        while(!empty()){
+            pop_front();
+        }
+    }
+private:
+    int theSize;
+    Node *head;
+    Node *tail;
+    
+    void init(){
+        theSize = 0;
+        head = new Node;
+        tail = new Node;
+        head->next = tail;
+        tail->prev = head;
+    }
+    
+```
+
+插入元素
+
+![image-20200328171607640](DataStruct-Notes.assets/image-20200328171607640.png)
+
+删除元素
+
+![image-20200328171633826](DataStruct-Notes.assets/image-20200328171633826.png)
+
+### 栈 stack 
+
+栈是限制插入和删除只能在一个位置上执行的链表，该位置在链表的末端，称之为栈顶top。栈的基本操作有push(入栈)和pop(出栈)，前者相当于插入，后者相当于删除最后的元素。另外对空栈不能执行push和pop操作。栈是先进后出(LIFO)的表。
+
+![image-20200328173451899](DataStruct-Notes.assets/image-20200328173451899.png)
+
+**栈的实现**
+
+由于栈是一个表，所以List和Vector都能实现栈。栈的操作都是常量级操作，基本上不会有优化。
+
+通常pop和push操作在机器指令存在，所以栈可以说是机器上一种最基本的数据结构
+
+**栈的应用**
+
+检验符号是否成对出现
+
+将栈置空，读入字符直到文件结束。如果字符是一个开放符号(符号开始部分)，将其压入栈中。如果字符是一个封闭符号(符号结束那一半)，如果栈为空则报错；栈不空弹出顶端元素，判断是否为对应开放符号，若不是则报错。重复操作直到文件尾。
+
+**后缀表达式**
+
+![image-20200328175128308](DataStruct-Notes.assets/image-20200328175128308.png)
+
+类似于这种表达式，称为后缀(postfix)或逆波兰(reserve Polish notation)表达式。
+
+算法流程为 使用一个栈，当遇到一个数时，就把它压入栈中；遇到操作符时，将该操作符作用于弹出的两个数上，并将结果压入栈中。直到最后只有一个数将其输出。
+
+中缀转换为后缀
+
+当读到一个操作数后，立即将它放到输出
+
+如果遇到一个右括号，将栈的元素弹出，直到一个对应的左括号，注意左括号不输出
+
+其他符号，从栈顶弹出元素，直到发现优先级更低的元素。+的优先级最低，(的优先级最高，同时除了右括号其他情况都不能弹出(。当元素都弹出后，将他们按照弹出顺序写入输出。最后将该符号压入栈。
+
+当读到末尾，将所有元素弹出，写入输出。
+
+核心思想是：当遇到一个操作符时，把它放到栈中，栈表示的是挂起的操作符。然而，当栈中高优先级的操作符完成使用时，则应弹出它们。判断是否完成使用，就是遇到的操作符级别低于栈顶的那部分操作符，表示高级操作已经完成了。
+
+**函数调用**
+
+函数调用和函数返回类似于开括号和闭括号，当存在函数调用时，需要存储的信息，例如寄存器的值和返回地址等以抽象的方式存在于堆(pile)的顶部。随后，控制转移到新的函数，该函数自由控制寄存器等。如果新函数继续调用其他函数，则执行相同的过程。函数返回时，它检查堆顶部的信息，并将寄存器复原，进行返回转移。
+
+所存储的信息称为活动记录(activation record)，或称为帧栈(stack frame). 
+
+### 队列 queue
+
+跟栈一样，队列也是表。然而，队列的插入在一端，删除则是在另外一端。
+
+**队列模型**
+
+队列的基本操作是入队（enqueue）和出队（dequeue）。入队是在标的队尾插入一个元素，出队则是删除并返回表开头的元素。
+
+![image-20200328201926674](DataStruct-Notes.assets/image-20200328201926674.png)
+
+实现方法：
+
+保留一个数组theArray，以及位置front和back分别代表队列的两端。设置currentSize记录实际存在于队列中元素的个数。
+
+![image-20200328202407057](DataStruct-Notes.assets/image-20200328202407057.png)
+
+对于操作。enqueue操作，先将currentSize和back自增1，然后置theArray[back]为x。dequeue操作，置返回值为theArray[front]，并将currentSize自减1，front自增1.
+
+对于一定长度的数组，可能在多次操作后两个指针都移动到了 界。这是可以使用循环数组(circular array)
+
+**队列的应用**
+
+打印机文件排队
+
