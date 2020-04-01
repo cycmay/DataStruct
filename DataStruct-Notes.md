@@ -644,7 +644,7 @@ const修饰返回值和类内成员不可更改来标识常量
 
 #### list 双向链表实现
 
-由于链表的结点是用户从系统堆heap区申请的内存空间，其数量是不定的，所以不能通过指针来增减指向的位置。设计iterator类，该类抽象了位置的概念，是一个公有的嵌套类。该类存储指向某个节点的指针，且尾部是有效位置，所以应该在末尾增加额外的节点。在表的前端也增加一个节点，在逻辑上表示开始，这样会避免某些特例，极大简化代码。额外的节点被称为哨兵节点，头部的节点称为表头节点(header node)，末端的节点称为尾节点(tail node)。
+由于链表的结点是用户从系统堆heap区申请的内存空间，其数量是不定的，所以不能通过指针来增减指向的位置。设计iterator类，该类抽象了位置的概念，是一个公有的嵌套类。该类存储指向某个结点的指针，且尾部是有效位置，所以应该在末尾增加额外的结点。在表的前端也增加一个结点，在逻辑上表示开始，这样会避免某些特例，极大简化代码。额外的结点被称为哨兵结点，头部的结点称为表头结点(header node)，末端的结点称为尾结点(tail node)。
 
 ![image-20200327175249838](DataStruct-Notes.assets/image-20200327175249838.png)
 
@@ -667,7 +667,7 @@ Node结构体的构造函数有三个参数，可以定义好三个成员变量�
 
 `iterator`和`const_iterator`区别在于iterator类型的迭代器是可以更改其内部成员的，所以`const_iterator`是基类，`iterator`继承之，重载`*`运算符。
 
-在List类内定义三个数据成员——theSize容器内元素数量，head指向头部节点的指针，tail指向尾部节点的指针。
+在List类内定义三个数据成员——theSize容器内元素数量，head指向头部结点的指针，tail指向尾部结点的指针。
 
 begin()和end()函数返回迭代器，迭代器的类型是iterator还是const_iterator由声明变量时决定，在定义该函数时，使用const修饰是否改变类内成员即可重载函数类型。返回的迭代器由传入链表表头或表尾元素的指针的构造函数实例化的对象。
 
@@ -864,7 +864,7 @@ class iterator:public const_iterator{
     iterator insert(iterator it, const Object & x){
         Node *p = it.current;
         theSize++;
-        //        插入prev节点的next 即p节点的prev位置
+        //        插入prev结点的next 即p结点的prev位置
         Node *temp = new Node;
         temp->data = x;
         temp->next = p;
@@ -989,4 +989,289 @@ private:
 **队列的应用**
 
 打印机文件排队
+
+## 树
+
+对于大量的数据，链表的线性访问时间太长，然而树（tree）结构的操作运行时间则平均为O(logN)
+
+通过递归的方法定义树(tree)，一棵树是一些结点的集合，这个集合可以是空集；若不是空集，则树由根(root)的结点r以及零个或多个非空的子树组成，这些子树中每一颗的根都被来自根r的一条有向边(edge)所连接。
+
+每一颗子树的根结点叫做root结点的孩子(child)，而root结点是每一颗子树的根结点的父亲(parent)。
+
+![image-20200329154633756](DataStruct-Notes.assets/image-20200329154633756.png)
+
+![image-20200329154846941](DataStruct-Notes.assets/image-20200329154846941.png)
+
+如上图所示结点A是root根结点，没有孩子的结点称为叶子结点(leaf)如I、P、Q等。具有相同父结点的结点称为兄弟结点(sibling)，如K、L、M同属于F，I、J同属于E。
+
+连接结点之间的线称为边(edge)。从结点$n_1到n_k$的一个序列定义为路径(path)。
+
+对任意结点$n_i$，从根结点到$n_i$的唯一路径的长，称为深度(depth)；从$n_i$到一片叶子结点**最长路径**的长称为高(height)。一颗树的高等于它的根结点的高。
+
+### 实现
+
+一般将树结点的数据结构设计成一个结点包含数据元素和指向兄弟结点的指针。
+
+### 二叉树
+
+二叉树（binary tree) 定义为一棵每个结点都不能有多于两个孩子结点的树。
+
+![image-20200329161825224](DataStruct-Notes.assets/image-20200329161825224.png)
+
+二叉树的一个性质是平均深度要比结点个数N小得多，为$O(\sqrt{N})$.
+
+**实现**
+
+由元素element和两个孩子结点的引用的结构组成
+
+```
+template <typename Object>
+struct BinaryNode{
+    Object element;
+    BinaryNode * left;
+    BinaryNode * right;
+};
+```
+
+**应用**
+
+表达式树(expression tree)
+
+![image-20200329163131245](DataStruct-Notes.assets/image-20200329163131245.png)
+
+表达式树的叶子结点是操作数（operand），其他结点为操作符(operator)。上图所示的表示的是`(a+(b*c))+(((d*e)+f)*g)`
+
+计算法这种表达式结果的方法有中序遍历(inorder traversal)，即通过递归产生带括号的左表达式，然后访问根处的操作符，最后递归产生带括号的右表达式。
+
+同理的还有后序遍历(postorder traversal)，前序遍历(preorder traversal).
+
+**由后缀表达式构建二叉的表达式树**
+
+假设输入`ab+cde+**`
+
+算法思路，类似于后缀表达式求值，将符号读入，如果符号是 操作数，建立一个单结点的树，并将其压入栈中；如果符号是操作符，从栈中弹出两个子树$T_2和T_1$, 形成一个新的树，该树的根就是操作符，它的左右孩子结点分别是$T_1$和$T_2$，然后将指向这棵新树的指针压入栈中。最后栈中只存在一个树的根结点。
+
+### 二叉查找树
+
+二叉树的一个重要应用就是它在查找中的应用。二叉查找树的性质是，对于树中的每个结点X，它的左子树的所有项的值小于X，而它的右子树中所有项的值大于X。
+
+二叉查找树的平均深度是O(logN)，不必担心栈空间耗尽。
+
+查找基于`<`操作符，该操作符必须在元素类内定义。
+
+#### **接口**
+
+```cpp
+template <typename Comparable>
+class BinarySearchTree {
+private:
+    struct BinaryNode{
+        Comparable element;
+        BinaryNode *left;
+        BinaryNode *right;
+        
+        BinaryNode(const Comparable & theElement, BinaryNode *lf,
+                   BinaryNode *rt):element(theElement), left(lf), right(rt){}
+    };
+    BinaryNode *root;
+    
+    void insert(const Comparable & x, BinaryNode * & t) const;
+    void remove(const Comparable & x, BinaryNode * & t) const;
+    BinaryNode * findMin(BinaryNode * t) const;
+    BinaryNode * findMax(BinaryNode * t) const;
+    bool contains(const Comparable & x, BinaryNode * t) const;
+    void makeEmpty(BinaryNode * & t);
+    void printTree(BinaryNode * t) const;
+    BinaryNode * clone(BinaryNode * t) const;
+    
+public:
+    BinarySearchTree();
+    ~BinarySearchTree();
+    BinarySearchTree(const BinarySearchTree & rhs);
+    
+    const Comparable & findMin() const;
+    const Comparable & findMax() const;
+    bool contains(const Comparable & x) const;
+    bool isEmpty() const;
+    void printTree() const;
+    
+    void makeEmpty();
+    void insert(const Comparable & x);
+    void remove(const Comparable & x);
+    
+    const BinarySearchTree & operator=(const BinarySearchTree & rhs);
+    
+    
+};
+
+```
+
+在接口中声明了默认构造函数、拷贝构造函数，以及是否存在某个元素、查找最大最小元素，还有插入删除数据等。
+
+#### 是否存在
+
+```cpp
+//类内部接口 contains< x, t>
+template <typename Comparable>
+bool BinarySearchTree<Comparable>::contains(const Comparable & x, BinaryNode *t) const{
+//    判断树中是否含有元素值为x的结点
+    if(t == NULL){
+        return false;
+    }
+    else if(x < t->element){
+//      若树的根结点t的元素值大于x，则去左子树递归查询是否contains
+        return contains(x, t->left);
+    
+    }
+    else if(x > t->element){
+//      若树的根结点t的元素值小于x，则去右子树递归查询是否contains
+        return contains(x, t->right);
+    }
+    else
+//        若相等，则返回true
+        return true;
+}
+
+// 公共接口 contains
+template <typename Comparable>
+bool BinarySearchTree<Comparable>::contains(const Comparable &x) const{
+//   从根结点root处调用contains函数
+    return contains(x, root);
+}
+
+```
+
+这里进行了子树的递归调用。
+
+#### 查找最大最小
+
+最小的元素在最左侧结点，所以一直在左子树递归调用，直到NULL为止。或者使用循环的方式，一直迭代到最左侧即做孩子为NULL的。
+
+```cpp
+template <typename Comparable>
+typename BinarySearchTree<Comparable>::BinaryNode *
+BinarySearchTree<Comparable>::findMin(BinaryNode * t) const{
+    if(t == NULL)
+        return NULL;
+    if(t->left == NULL)
+        return t;
+    return findMin(t->left);
+    
+    ////        或者使用循环的方式
+    //#if 0
+    //        if(t != NULL)
+    //            while(t->left!=NULL)
+    //                t = t->left;
+    //        return t;
+    //#endif
+    
+}
+
+template <typename Comparable>
+typename BinarySearchTree<Comparable>::BinaryNode *
+BinarySearchTree<Comparable>::findMax(BinaryNode * t) const {
+    if(t == NULL)
+        return NULL;
+    if(t->right == NULL)
+        return t;
+    return findMax(t->right);
+}
+
+```
+
+#### insert 插入
+
+为了将x插入到树T中，可以像contains一样，沿着树进行查找，如果找到x则do nothing；否则将x插入到遍历到的路径上的最后一个结点。
+
+```cpp
+template <typename Comparable>
+void BinarySearchTree<Comparable>::insert(const Comparable & x,
+                                            BinaryNode * & t) const{
+    if(t == NULL)
+        t = new BinaryNode(x, NULL, NULL);
+    if(x < t->element)
+        insert(x, t->left);
+    if(x > t->element)
+        insert(x, t->right);
+    else
+        return;
+}
+
+```
+
+#### remove 删除
+
+在一般的数据结构中，删除操作一般是比较复杂的，因为它要考虑几种可能的情况。
+
+如果结点是一片叶子结点，那么它可以立即删除。
+
+如果结点有一个孩子结点，那么在其父结点调整它的链。如删除4结点，而4结点有一个孩子结点3：
+
+![image-20200331090715762](DataStruct-Notes.assets/image-20200331090715762.png)
+
+如果结点有两个孩子结点，一般的策略是用右子树的最小结点的数据交换该结点的数据，并递归地删除该结点(交换后该结点必然不包含左子树，因为已经是最小结点的位置)。
+
+![image-20200331092203268](DataStruct-Notes.assets/image-20200331092203268.png)
+
+如删除2结点，将其与右子树最小结点3交换，随后删除其在3号位置的结点，此时执行删除只有一个子结点的函数。
+
+#### 删除树
+
+私有的makeEmpty()函数递归地处理t的子树，对t执行delete。最后root置NULL。
+
+```cpp
+template <typename Comparable>
+void BinarySearchTree<Comparable>::makeEmpty(BinaryNode * & t){
+    if(t == NULL)
+        return;
+    else{
+        makeEmpty(t->left);
+        makeEmpty(t->right);
+        delete t;
+    }
+//    将t置空
+    t = NULL;
+}
+//公共接口
+template <typename Comparable>
+void BinarySearchTree<Comparable>::makeEmpty(){
+    makeEmpty(root);
+}
+```
+
+
+
+#### 克隆树
+
+对于NULL，直接返回NULL；
+
+创建一个新结点，并将rhs的值拷贝到新结点。对于子树，克隆左右孩子树到自己的左右孩子。
+
+```cpp
+//deep copy
+template <typename Comparable>
+const BinarySearchTree<Comparable> & BinarySearchTree<Comparable>::operator=
+    (const BinarySearchTree & rhs){
+//    删除原来的树
+        makeEmpty();
+        root = clone(rhs);
+        return *this;
+}
+
+// clone a subtree
+template <typename Comparable>
+typename BinarySearchTree<Comparable>::BinaryNode *
+BinarySearchTree<Comparable>::clone(BinaryNode * t) const{
+    if(t == NULL)
+        return NULL;
+    BinaryNode * temp = new BinaryNode;
+    temp->element = t->element;
+    temp->left = clone(t->left);
+    temp->right = clone(t->right);
+    return temp;
+}
+
+```
+
+同样的重载=运算符，对参数进行拷贝。
 

@@ -8,7 +8,7 @@
 #ifndef Vector_h
 #define Vector_h
 
-#include <stdlib.h>
+#include <cstdlib>
 
 template <typename Object>
 class Vector{

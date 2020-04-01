@@ -136,7 +136,7 @@ public:
         return const_iterator(tail);
     }
     
-    int size(){
+    int size() const{
         return theSize;
     }
     bool empty(){
@@ -206,6 +206,7 @@ public:
             pop_front();
         }
     }
+    
 private:
     int theSize;
     Node *head;
