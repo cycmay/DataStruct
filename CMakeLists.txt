@@ -1,39 +1,44 @@
+#CMake 最低版本要求
 cmake_minimum_required(VERSION 3.10)
-project(datastruct)
+#项目名称
+SET(PROJECT_NAME DataStruct)
+project(${PROJECT_NAME})
 #the version number
 # no use
 
-#set build model
-SET(CMAKE_BUILD_TYPE Debug)
-#set project name
-SET(PROJECT_NAME DataStruct)
+#允许gdb调试
+set(CMAKE_BUILD_TYPE "Debug")
+set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
+set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
+
+
+#添加C++11支持及其他选项
+set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS} -g -ftest-coverage -fprofile-arcs -Wno-deprecated")
 
 #set execute path
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set library path
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
+#生成项目的可执行文件
 add_executable(${PROJECT_NAME}
     src/datastruct.cpp 
 )
-
+#为可执行文件添加源文件cpp
 target_sources(${PROJECT_NAME}
     PRIVATE
     src/utils.cpp
     test/queue_test.cpp test/tree_test.cpp
 )
-
+#添加头文件目录
 target_include_directories(${PROJECT_NAME}
     PRIVATE
     ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/test/include
 )
+#编译选项
 target_compile_options(${PROJECT_NAME}
     PRIVATE
-    -ggdb
-    -Wall
-    -O0
-    -std=c++11
 )
 target_compile_definitions(${PROJECT_NAME}
     PRIVATE

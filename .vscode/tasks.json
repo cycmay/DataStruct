@@ -2,7 +2,6 @@
     "version": "2.0.0",
     "tasks": [
         {
-            // 根目录下创建build文件夹 bin文件夹
             "type": "shell",
             "label": "build_dir",
             "command": "mkdir",
@@ -11,7 +10,6 @@
                 "build",
                 "bin"
             ],
-            // windows 平台
             "windows": {
                 "options": {
                     "shell": {
@@ -22,22 +20,21 @@
                     "-Force",
                     "build",
                     "bin"
-                ],
+                ]
             }
         },
         {
-            // 在build 文件夹调用cmake进行项目配置
             "label": "cmake",
             "type": "shell",
             "command": "cmake",
             "args": [
                 "-DCMAKE_BUILD_TYPE=${input:CMAKE_BUILD_TYPE}",
-                "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON", // 生成compile_commands.json 供c/c++扩展提示使用
+                "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
                 "../"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/build",
-            }, 
+                "cwd": "${workspaceFolder}/build"
+            },
             "windows": {
                 "args": [
                     "-DCMAKE_BUILD_TYPE=${input:CMAKE_BUILD_TYPE}",
@@ -48,26 +45,25 @@
                 ],
                 "options": {
                     "shell": {
-                        // "executable": "C:\\Program Files (x86)\\Microsoft Visual Studio 12.0\\VC\\vcvarsall.bat",
-                        // 需要根据安装的vs版本调用vs工具命令提示符
                         "executable": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat",
                         "args": [
-                            "${input:PLATFORM}", //指定平台
-                            "-vcvars_ver=${input:vcvars_ver}", //指定vc环境版本
+                            "${input:PLATFORM}",
+                            "-vcvars_ver=${input:vcvars_ver}",
                             "&&"
                         ]
                     }
-                },
+                }
             },
             "dependsOn": [
-                "build_dir" // 在task `build_dir` 后执行该task
+                "build_dir"
             ]
         },
         {
-            // 在build文件夹中调用cmake编译构建debug程序
-            // 执行命令为 `cmake --build ./ --target all --`
             "label": "build",
-            "group": "build",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
             "type": "shell",
             "command": "cmake",
             "args": [
@@ -78,13 +74,12 @@
                 "--"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/build",
+                "cwd": "${workspaceFolder}/build"
             },
             "problemMatcher": "$gcc",
             "windows": {
                 "options": {
                     "shell": {
-                        // "executable": "C:\\Program Files (x86)\\Microsoft Visual Studio 12.0\\VC\\vcvarsall.bat",
                         "executable": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat",
                         "args": [
                             "${input:PLATFORM}",
@@ -95,8 +90,8 @@
                 },
                 "problemMatcher": "$msCompile"
             },
-            "dependsOn":[
-                "cmake" // 在cmake task 执行完后执行
+            "dependsOn": [
+                "cmake"
             ]
         }
     ],

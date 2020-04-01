@@ -10,11 +10,11 @@
             "request": "launch",
             "program": "${workspaceFolder}/bin/${workspaceFolderBasename}", //指定C/C++程序位置
             "args": [], //指定运行参数
-            "stopAtEntry": false,
+            "stopAtEntry": false, // 设为true时程序将暂停在程序入口处，相当于在main上打断点
             "cwd": "${workspaceFolder}", //指定工作目录
             "preLaunchTask": "build", //在调试前会先调用build_debug这个task编译构建程序
-            "environment": [],
-            "externalConsole": false,
+            "environment": [], // 环境变量
+            "externalConsole": false, // 为true时使用单独的cmd窗口，与其它IDE一致；18年10月后设为false可调用VSC内置终端
             "osx": { //macOS的特定配置
                 // "miDebuggerPath": "/Applications/Xcode.app/Contents/ Developer/usr/bin/lldb-mi", //修改使用的lldb-mi，一般不需要修改
                 "MIMode": "lldb" //指定使用lldb进行调试
