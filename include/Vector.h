@@ -17,6 +17,14 @@ public:
         initSize+SPARE_CAPACITY){
         objects = new Object[theCapacity];
     }
+
+    // explicit Vector(Object &rhs): theSize(sizeof(rhs)/sizeof(Object)), 
+    //     theCapacity(theSize+SPARE_CAPACITY){
+    //         objects = new Object[theCapacity];
+    //         for(int i = 0; i < theSize; ++i){
+    //             objects[i] = rhs[i];
+    //         }
+    // }
     
     Vector(const Vector & rhs): objects(NULL){
         operator=(rhs);
@@ -50,7 +58,7 @@ public:
         return size()==0;
     }
     
-    int resize(int newSize){
+    void resize(int newSize){
         if(newSize > theCapacity)
             reserve(newSize*2+1);
         theSize = newSize;

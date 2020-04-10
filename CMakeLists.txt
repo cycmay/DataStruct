@@ -13,7 +13,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 
 
 #添加C++11支持及其他选项
-set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS} -g -ftest-coverage -fprofile-arcs -Wno-deprecated")
+set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS} -g ") #-ftest-coverage -fprofile-arcs -Wno-deprecated")
 
 #set execute path
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
@@ -27,8 +27,6 @@ add_executable(${PROJECT_NAME}
 #为可执行文件添加源文件cpp
 target_sources(${PROJECT_NAME}
     PRIVATE
-    src/utils.cpp
-    test/queue_test.cpp test/tree_test.cpp
 )
 #添加头文件目录
 target_include_directories(${PROJECT_NAME}

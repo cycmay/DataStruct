@@ -1275,3 +1275,726 @@ BinarySearchTree<Comparable>::clone(BinaryNode * t) const{
 
 同样的重载=运算符，对参数进行拷贝。
 
+### AVL树
+
+AVL(Adelson-Velskii and Landis)树是带有平衡条件(balance condition)的二叉查找树。平衡条件，保证树的深度是O(logN)，最简单的想法是要求左右子树具有相同的高度，甚至要求每个结点必须有相同高度的左子树和右子树。后者虽然保证了树的深度足够小，但是难以实现以及使用。
+
+一颗AVL树是其每个结点的左子树和右子树的高度最多差1的二叉查找树(空树的高度为-1)，在每个结点上保留高度信息。
+
+插入一个结点可能破坏AVL树的特性(例如插入某个结点后高度发生变化，破坏了差1的平衡性)，这时可以通过对树的修正，称之为旋转(rotation)。
+
+插入结点后，从插入点到根结点的路径上的结点的平衡性可能发生改变，因为只有这些结点的子树可能发生变化。在这条路径上，存在一个必须平衡的结点a，由于任意结点最多有两个孩子结点，高度不平衡时，a结点的两棵子树高度差2.
+
+
+
+#### 单旋转
+
+single rotation
+
+对a的左孩子结点的左子树插入
+
+![image-20200403125957994](DataStruct-Notes.assets/image-20200403125957994.png)
+
+结点$k_2$不满足AVL平衡性质，因为它的左子树比右子树深2层，图中虚线表示树的各层。新增的结点在X子树，它比子树Z深出2层。
+
+为了恢复平衡，把X上移一层，并把Z下移一层。k1变成了新的根，依据原树的关系，k2应该放在k1右子树；子树Y包含原树中介于k1和k2之间的结点，可以将它放在新树k2的左子树。新生成的树是一颗AVL树，且高度不影响上层树。
+
+#### 双旋转
+
+对a的左孩子结点的右子树或者a的右孩子结点的左子树进行插入
+
+使用单旋转算法产生问题：子树Y在单旋转后并没有减低它的深度
+
+![image-20200403133155076](DataStruct-Notes.assets/image-20200403133155076.png)
+
+假设Y中某一个子树B或者C比D深两层，在整颗树中无论单旋k1或者k3都不能降低k2的高度差，此时重新选择k2作为树的根结点，调整k1，k3分别称为它的子结点，这样ABCD四棵树都确定了位置，冰鞋满足AVL性质。
+
+### B/B+树
+
+假如数据量大到计算机内存不足以存放之，那就意味着必须存放之到磁盘上。
+
+然而磁盘的I/O操作速度取决于磁盘的机械运动速度，即磁盘转速和磁头移动速度。一般的磁盘旋转速度为7200RPM，即7200转/min，也就是1转占用1/120s，约合8.3ms，平均认为磁盘转到1半就能找到信息。但是CPU的速度是惊人的，执行400w条指令对应一次磁盘访问，显然是不匹配的。因此，磁盘的访问代价是极其昂贵的。
+
+假如有一份数据，共计1000w项，键占用空间为32字节，记录占用空间为256字节。CPU和磁盘资源为：1s内执行100w次指令，或者执行6次磁盘访问。
+
+如果使用二叉查找树存储数据，在最糟糕的情况下，可能需要1000w次磁盘访问；即使采用平均值1.38logN次，计算出平均查找一次记录需要32次磁盘访问或者说需要5s的时间。如何将访问次数降低到最小呢？
+
+试着使用更多叉的树，即一颗M叉查找树(M-ary search tree). 一颗完全M叉树的高度大约是$log_MN$
+
+为了保证M叉树的平衡条件，就使用到了B+树。
+
+阶为M的B+树是一棵具有以下结构特性的树：
+
+1.  数据项存储在叶子结点上
+2.  非叶结点存在至多M-1个键，以指示搜索的方向；键i代表子树i+1中的最小的键。
+3.  树的根要么没有孩子结点，要么孩子结点个数在2-M。
+4.  除了树的根，所有非叶子结点的孩子结点个数在|-M/2-|到M之间。
+5.  所有叶子结点都在相同的深度上，并有|-L/2-|到L之间的数据项。
+
+例如5阶B树：
+
+![image-20200403203307998](DataStruct-Notes.assets/image-20200403203307998.png)
+
+所有非叶结点的子结点个数都在3到5之间(从而有2到4个键)，根的子结点个数则为2到5之间。
+
+每个结点代表一个磁盘区块，于是根据所存储项的大小来选择L和M。
+
+假设一个区块存储容量为8192Bytes。存储10^7份记录(键占用32B，记录占用256B)。
+
+在M阶的B+树中，每个非叶结点至多存在M-1个键，占用空间为`4*(M-1)B`，指向的M结点使用指针存储占用`4B*M`，所以一个非叶节点占用空间为`(36M-32)Bytes`。计算不超过区块存储容量的最大M为228.
+
+在叶子结点上，每个记录占用256B，计算的一个区块最多存放L=32个记录。
+
+由于平衡性性质，每个非叶子结点最少有M/2个分支，同时10^7份记录存储在10^7/32=625000个叶子结点。最坏的访问次数有公式$log_{M/2}N$，大约为3-4次磁盘访问。
+
+**插入数据**
+
+1.  插入后叶子结点不满。特别简单，直接加入即可。
+
+    ![image-20200403210421119](DataStruct-Notes.assets/image-20200403210421119.png)
+
+2.  插入后叶子结点满，父结点键不满。将其一分为二，二者都会有满足最小的L/2个数据记录。
+
+    ![image-20200403210520789](DataStruct-Notes.assets/image-20200403210520789.png)
+
+3.  插入后叶子结点满，父结点键也满。子执行分裂后，父再执行分裂
+
+    ![image-20200403210952557](DataStruct-Notes.assets/image-20200403210952557.png)
+
+4.  依次类推，当根节点也需要分裂时，不可能同时出现两个根节点，这时只需要分裂后的两个根节点重新定义一个父结点，并将此父结点作为该树的根节点root即可。这也就是为什么B树允许根结点的最少孩子结点个数为2.
+
+**删除数据**
+
+通过查找要被删除的项，并执行删除操作。如果被删除的项所在叶子结点的数据项数已经最小，从而删除之后导致叶子结点的项数低于约定的最小值。这时可以从邻结点领养一个项作为子结点，如果邻结点已经是最小值，那么可以与该结点联合成一片满叶，如果联合导致父结点的子结点数低于约定最小值，使用本策略继续进行，直到根，根最少可以有两个子结点，两个子结点可以联合成新的根节点。
+
+![image-20200404100217383](DataStruct-Notes.assets/image-20200404100217383.png)
+
+### STL中的set和map
+
+标准库中这两个容器的基本操作(插入、删除和查找)时间开销为logN
+
+#### set
+
+set是排序后的容器，容器内元素不允许重复。set的成员方法包括begin、end、size、empty
+
+set特有的操作时高效的插入、删除和执行查找。
+
+由于set内元素不允许重复，所以insert可能失败，所以该方法的返回值类型应为布尔变量。然而查找到互斥的元素后，应将其位置iterator返回以便删除，从而避免查找操作。所以返回值类型的数据结构较复杂。
+
+STL定义了一个pair的模板类，该类有两个用来访问成员的first和second。
+
+`pair<iterator, bool> insert(const Object & x);`
+
+`pair<iterator, bool> insert(iterator it, const Object & x);`
+
+
+
+#### map
+
+map存储排序后由键和值组成的项的集合。键必须唯一，多个键可以对应同一个值。
+
+对于map的迭代器iterator是pair<KeyType, ValueType>类型。
+
+map可以通过[]操作符重载实现查找索引。
+
+`ValueType & operator[](const KeyType & key);`
+
+如果在map中存在key，就返回指向相应的值的引用。如果在map中不存在该key，就插入一个默认值。如果map通过常量引用，那么operator[]就不该使用。
+
+
+
+#### **set和map的实现**
+
+C++中set和map支持在最坏的情况下对基本的操作insert、erase和find仅仅消耗对数时间。相应的，其底层实现是平衡二叉查找树。典型的不是使用AVL树，而是使用红黑树。
+
+为了在容器set和map中提供对迭代器类的支持，如何保证高效地推进迭代器至下一个结点。
+
+每个结点保持额外链接：向前至较小结点，向后至较大结点。仅仅为那些左侧或者右侧邻接点为NULL保持额外链接，并在节点内使用布尔变量指示是否有左右链接。这种思想称为线索树(threaded tree).
+
+## 散列
+
+散列是一种用于常数时间内执行插入、删除和查找的技术，但是不支持元素键排序操作。
+
+### 思想
+
+散列的数据结构是一个包含一些项的固定大小的数组。
+
+将每个键映射到0至TableSize-1范围中的某个单元，这个映射就被成为散列函数。理想情况下，散列函数应该运算简单并且能够保证任何不同的两个键映射不到同一个单元，并且所有的键应该被均匀分配。
+
+如果两个键散列到同一个值，称为冲突(collision)。
+
+### 散列函数
+
+简单的有模运算法，保证表的大小是素数，当输入的键是随机整数时，散列函数会简单，而且键的分配也会均匀。
+
+### 冲突
+
+分离链接法(separate chaining)
+
+![image-20200404205123411](DataStruct-Notes.assets/image-20200404205123411.png)
+
+TODO：
+
+​	一些不常用的不常见的知识点。
+
+
+
+## 优先队列
+
+优先队列是至少允许以下两种数据操作：insert(插入)；deleteMin(删除最小项)。
+
+insert操作等价于入队(enqueue)，而deleteMin则是队列操作中出队(dequeue
+
+**模型**
+
+![image-20200404210756937](DataStruct-Notes.assets/image-20200404210756937.png)
+
+
+
+### 简单实现
+
+简单链表以O(1)执行插入操作，O(N)遍历该链表以删除最小元素。
+
+另外使用二叉查找树，两种操作都会是O(logN)。但是删除操作删除的是最小元的结点，这会导致右子树加重，导致树的不平衡性。
+
+### 二叉堆
+
+二叉堆(binary heap)，与二叉查找树一样，堆也有两个性质，即结构性质和堆序性质。
+
+#### 结构性质
+
+堆是一棵完全二叉树（complete binary tree），除了底层元素从左向右填入，其他都被完全填满的二叉树。
+
+因为完全二叉树的规律，所以它可以用数组表示，而不用链表。
+
+![image-20200405152820324](DataStruct-Notes.assets/image-20200405152820324.png)
+
+对于数组中任一位置i上的元素，其左子结点在位置2i上，右子结点在(2i+1)上，其父结点在└i/2┘。所以遍历该树操作简单，
+
+#### 堆序性质
+
+最小元应该在根上，且任意子树也是堆。
+
+### 基本堆操作
+
+#### insert
+
+在将元素x插入堆中，在完全二叉树空闲位置创建一个空穴。将x放入空穴，若不满足堆序，则交换父结点，并向根的方向继续进行，直到找到放置x的正确位置。
+
+![image-20200405215249045](DataStruct-Notes.assets/image-20200405215249045.png)
+
+向上浮动x的策略称为上虑(percolate up).
+
+```cpp
+// insert item x allowing duplicates
+template <typename Comparable>
+void BinaryHeap<Comparable>::insert(const Comparable &x){
+    if(currentSize == array.size() - 1)
+        array.resize(array.size() * 2);
+    
+    // percolate up
+    int hole = ++currentSize;
+    for(; hole > 1 && x < array[hole/2]; hole /= 2)
+        array[hole] = array[hole/2];
+    array[hole] = x;
+}
+```
+
+
+
+#### deleteMin
+
+先找到最小元，然后删除之。在根结点建立空穴。将空穴的两个子结点比较，较小者与空穴互换，这样就把空穴向下推进一层，重复该步骤，直到最后一个元素放进空穴。
+
+![image-20200405215937753](DataStruct-Notes.assets/image-20200405215937753.png)
+
+```cpp
+// remove the minimum item
+template <typename Comparable>
+void BinaryHeap<Comparable>::deleteMin(){
+    if(empty())
+        return;
+    // 将最后一个结点的值赋予root结点 同时最后一个指针自减
+    array[1] =  array[currentSize--];
+    // 将root结点的值下滤
+    percolateDown(1);
+
+}
+
+// Internal method to percolate down in the heap
+// hole is the index at which the percolate begin
+template <typename Comparable>
+void BinaryHeap<Comparable>::percolateDown(int hole){
+    int child;
+    Comparable temp = array[hole];
+    // 迭代直到没有子结点
+    for(; hole*2 <= currentSize; hole = child){
+        child = hole*2;
+        // 选定两个孩子结点较小的一个
+        if(child != currentSize && array[child+1]<array[child])
+            child++;
+        // 若孩子结点比hole结点更小 交换之 
+        if(array[child]<temp)
+            array[hole] = array[child];
+        else
+            break;
+    }
+    array[hole] = temp;
+}
+```
+
+deleteMin操作的最坏运行时间为O(logN)，因为绝大多数的元素从根处下滤到叶子结点。
+
+#### buildHeap
+
+通过函数的参数项的一个序列来构造堆，首先将N项以任意顺序放入树中，保持结构特性，随后对每个非叶结点使用下滤策略生成一颗堆序树。
+
+```cpp
+// Establish heap order property from an arbitary arrangement of items.
+template <typename Comparable>
+void BinaryHeap<Comparable>::buildHeap(){
+    for(int i = currentSize/2; i >0;  --i)
+    // currentsize / 2 是当前二叉堆完全二叉树的最后一个非叶子结点
+        percolateDown(i);
+}
+
+// contractor function
+template <typename Comparable>
+BinaryHeap<Comparable>::BinaryHeap(const Vector<Comparable> & items):
+    currentSize(items.size()), array(items.size()+1){
+    // insert items
+    // 二叉数组的第一个元素没有实际意义 故加1
+    for(int i = 0; i < items.size();  ++i)
+        array[i+1] = items[i];
+    // build heap
+    buildHeap();
+}
+```
+
+建立N个元素的二叉堆的基本方法花费O(N)时间。
+
+## 排序算法
+
+假设算法中:
+
+-   元素都是可以互换的
+-   程序中元素个数为N
+-   存在">, <"操作符
+
+在这些条件下的排序称为基于比较的排序(comparison-based sorting)
+
+STL中，排序通过使用函数sort完成
+
+`void sort(Iterator begin, Iterator end);`
+
+`void sort(Iterator begin, Iterator end, Comparator cmp);`
+
+sort算法不能保证相等的项保持它们原始的相对次序(可以用stable_sort代替)
+
+`sort(v.begin(), v.end());` 将整个容器v按照非降序排列。
+
+`sort(v.begin(), v.end(), greater<int>());` 将整个容器按非升序排列。
+
+`sort(v.begin(), (v.end()-v.begin())/2)`将容器的前半部分按非降序排列
+
+
+
+### 插入排序
+
+insertion sort最简单的排序算法之一。排序过程由N-1趟(pass)完成。
+
+对于从p到N-1趟（p初始值为1），保证从位置0到位置p上的元素都已经是排序好的状态。
+
+过程实例如下：
+
+![image-20200407090408507](DataStruct-Notes.assets/image-20200407090408507.png)
+
+在第p趟，将位置p上的元素向左移动到它之前p个元素中正确的位置。
+
+```cpp
+template <typename Comparable>
+void insertionSort(Vector<Comparable> &a){
+    int j;
+    for(int p = 1; p < a.size(); ++p){
+        Comparable temp = a[p];
+        for(j = p; temp<a[j-1] && j>0 ; --j){
+            // 从p位置向前遍历，移动前一项元素到后一项，直到遍历到迭代器指向的位置前一项不
+            // 再大于原p位置的元素值，即找到了p位置元素的合适位置
+            a[j] = a[j-1];
+        }
+        // 将p位置的元素放到适合位置j
+        a[j] = temp;
+    }
+}
+```
+
+**分析**
+
+对于每一个p值，嵌套内代码最多执行p+1次，对所有p求和:
+
+得到总数
+
+$\sum_{i=2}^{N}i =  2 + 3 + 4+…+N = \Theta(N^2)$
+
+如果输入数据几乎已经排序，嵌套内判断立即终止，那么运行时间为O(N)。
+
+**定理**：通过交换相邻元素进行排序的任何算法平均时间为$\Omega(N^2)$.
+
+### 希尔排序
+
+希尔排序(shellsort)源自于其发明者Donald shell，该算法是打破二次时间屏障的第一批算法之一。
+
+它通过比较相距一定间隔的元素进行比较，各趟比较的距离随算法进行而减小，直到比较相邻元素的最后一趟排序为止。因此希尔排序也称缩减增量排序(diminishing increment sort)。
+
+希尔排序使用一个增量序列(increment sequence)，一般是素数序列。在一趟排序（对每个子数组执行一次插入排序）后，所有相隔hk元素被排序。
+
+![image-20200407202352620](DataStruct-Notes.assets/image-20200407202352620.png)
+
+使用希尔增量时希尔排序的最坏情形运行时间为$\Theta(N^2)$，
+
+```cpp
+// 希尔排序
+template <typename Comparable>
+void shellSort(Vector<Comparable> &a){
+    for(int gap = a.size() / 2; gap>0; gap /=2){
+        // 希尔增量序列 gap 
+        for(int i = gap; i < a.size(); ++i){
+            // 分组 对每一组进行插入排序
+            Comparable temp = a[i];
+            int j = i;
+            for(; j >= gap && temp < a[j-gap]; j -= gap)
+                a[j] = a[j-gap];
+            a[j] = temp;
+        }
+    }
+}
+```
+
+使用Hibbard增量的希尔排序的最坏情形运行时间为$\Theta(N^{3/2})$
+
+### 堆排序
+
+优先队列可以以O(NlogN)时间进行排序。
+
+建立N个元素的二叉堆花费O(N)的时间，执行N次deleteMin操作以获取最小元素花费O(NlogN)时间。获取到最小元素后将其记录到第二个数组然后拷贝回原数组，因此存储空间多消耗了一倍。可以巧妙地在deleteMin操作后，将item保存到参数后的位置上，最终得到递减顺序的序列。若想要得到递增顺序的序列，增加deleteMax方法即可。
+
+```CPP
+template <typename Comparable>
+void heapsort(Vector<Comparable> & a){
+    // build heap
+    for(int i = a.size()/2; i>=0; --i)
+        percolateDown(a, i, a.size());
+    // sort // delet max
+    for(int j = a.size()-1; j>0 ; --j){
+        // swap 0,j
+        Comparable temp = a[0];
+        a[0] = a[j];
+        a[j] = temp;
+        // 将顶部的元素下滤
+        percolateDown(a, 0, j);
+    }
+        
+}
+
+
+/* 
+ * @Description: 二叉堆中的下滤策略 
+ * @param a: 容器Vector
+ * @param i: 下滤的元素位置 从0开始
+ * @param n: 结点个数 
+ * @return: 
+*/ 
+template <typename Comparable>
+void percolateDown(Vector<Comparable> & a, int i, int n){
+    int child; // 子结点
+    Comparable temp;
+    // 在源Vector中元素索引下标从0位置开始 i位置元素的孩子结点位置为2*i+1
+    for(temp = a[i]; 2*i+1 < n; i = child){
+        child = i * 2 + 1;
+        // 找到两个子结点中较大的一个
+        // 必须要判断是否还存在邻结点
+        if(child != n-1 && a[child] < a[child+1])
+            child++;
+        //  将较小的元素向下滤
+        if(temp < a[child])
+            a[i] = a[child];
+        else 
+            break;
+    }
+    a[i] = temp;
+}
+```
+
+**分析**
+
+对N个互异项的随机排列进行堆排序，所用的比较平均次数为2NlogN-O(Nlog logN).
+
+
+
+
+
+### 归并排序
+
+归并排序(mergesort)，以O(NlogN)时间运行，使用递归。
+
+基本算法是合并两个已经排序的表。将A、B数组合并到C数组中，需要三个计数器(Actr、Bctr和Cctr)。将三个极计数器放置在对应数组的起始位置，比较A和B的较小者被复制到C的位置，并迭代一次，当一个表的指针指向末尾，将另一个表的所有元素复制到C即可。
+
+![image-20200408233127615](DataStruct-Notes.assets/image-20200408233127615.png)
+
+![image-20200408233142580](DataStruct-Notes.assets/image-20200408233142580.png)
+
+合并两个已排序的表的时间是线性的。最多进行了N-1次比较。因为每次比较完都会放一个元素到C，最后一次却会添加两个元素，所以最多比较N-1.
+
+算法描述：如果N=1，那么只有一个元素直接放到C；否则，递归的归并前半部分数据和后半部分数组，得到归并好的两个数组，使用上述方法合并到一起。
+
+```cpp
+template <typename Comparable>
+void mergeSort(Vector<Comparable> &a){
+    Vector<Comparable> tempArray(a.size());
+    mergeSort(a, tempArray, 0, a.size()-1);
+}
+
+template <typename Comparable>
+void mergeSort(Vector<Comparable> &a,
+                Vector<Comparable> & tempArray, int left, int right){
+    if(left < right){
+        int center = (left + right) /2;
+        mergeSort(a, tempArray, left, center);
+        mergeSort(a, tempArray, center+1, right);
+        merge(a, tempArray, left, center+1, right);
+    }
+}
+
+/* 
+ * @Description: 将一个前后两半部分已排好序的数组合并为一个完整排好序的数组
+ * @param a: 源数组
+ * @param tempArray: place the merge result. 
+ * @param leftpos: left-most index of the subarray. 
+ * @param rightpos: the start of the second half.
+ * @param rightend: the right-most index of the subarray. 
+ * @return: 
+*/ 
+template <typename Comparable>
+void merge(Vector<Comparable> & a, Vector<Comparable> & tempArray, int leftpos,
+            int rightpos, int rightend){
+    int leftend = rightpos - 1;
+    int temppos = leftpos;
+    int numElements = rightend - leftpos + 1;
+
+    // main loop
+    while(leftpos <= leftend && rightpos <= rightend){
+        if(a[leftpos] <= a[rightpos])
+            tempArray[temppos++] = a[leftpos++];
+        else
+            tempArray[temppos++] = a[rightpos++];
+    }
+
+    // 将剩余序列全部复制到结果中
+    while(leftpos <= leftend){
+        tempArray[temppos++] = a[leftpos++];
+    }
+    while(rightpos <= rightend){
+        tempArray[temppos++] = a[rightpos++];
+    }
+
+    // copy tempArray back to a
+    for(int i = 0; i < numElements; ++i, rightend--)
+        a[rightend] = tempArray[rightend];
+}
+```
+
+在递归调用中并不创建临时的数组，而是传入最开始创建的数组，这样任意时刻就不是有logN个临时数组存在，而是只需要一个临时数组活动。
+
+**分析**
+
+对运行时间进行递推关系。
+
+对于N=1，归并排序使用常数时间；
+
+其他的对N个数用时等于完成两个大小为N/2的递归排序，再加上合并的时间(线性时间)。
+
+$T(1) = 1$
+
+$T(N) = 2T(N/2) + N$
+
+等式两边同时除以N，
+
+![image-20200409110455051](DataStruct-Notes.assets/image-20200409110455051.png)
+
+将等式叠加得到：
+
+$T(N)/N = T(1)/1 + logN$
+
+所以有$T(N) = NlogN + N = O(NlogN)$
+
+整个算法中还要花费时间将数据复制到临时数组，这样严重减慢了排序的速度。在java中，元素比较耗时多于移动元素，所以流行使用归并排序；而在c++中，复制对象的代价大于对象的比较。
+
+### 快速排序
+
+快速排序(quicksort)是实践中最快的已知排序算法，它的平均运行时间为O(NlogN)。
+
+快排最坏情形下耗时$O(N^{2})$，使用堆排序和快排结合，就可以优化为O(NlogN)。
+
+快速排序也是一种分治的递归算法。假设源数组为S其步骤如下：
+
+1.  如果S中元素个数为0或1，返回。
+2.  取S中任意一个元素v作为枢纽元(pivot)
+3.  将S-{v}(S中剩余元素)划分为两个不相交的集合：$S_1= \{ x \in S - \{v\}  | x<= v \}$ 和 $S_2= \{ x \in S - \{v\}  | x>= v \}$ 
+4.  返回{quicksort(S1)}, v ,以及quicksort(S2)
+
+一般的，像二叉查找树一样，我们选择中间元素作为枢纽元，划分左右各一半大小的序列。
+
+快速排序的高效性体现在第三步，在适当位置进行。
+
+#### 选取枢纽元
+
+1 选取第一个元素作为枢纽元，如果输入序列是预排序的或者反序的，这样的枢纽元产生单向分割，这样快速排序花费了原本不必要的时间。
+
+2 随机选取，相对来说比较安全，但是生产随机数是昂贵操作，因此不可取。
+
+3 选取序列首尾和中间值三者中的中值，这样确实会节省比较次数。
+
+#### 分割策略
+
+第一步是将枢纽元与最后的元素交换使其与要被分割的数据段分离。设置两个指针i和j，i指向第一个元素并向后移动，j指向倒数第二个元素，向前移动。
+
+![image-20200409131755020](DataStruct-Notes.assets/image-20200409131755020.png)
+
+如图，6为选中的枢纽元。
+
+第二步，分割阶段，把所有较小的元素(与枢纽元相比)移动到数组左边，所有较大的元素移动到数组右边。移动指针i和j，直到分别指向大元素和小元素，如果i在j的左边，将二者元素互换。
+
+![image-20200409133232915](DataStruct-Notes.assets/image-20200409133232915.png)
+
+随后i与j相对位置发生变化，停止交换操作。此时将枢纽元素与i指向的元素交换。
+
+![image-20200409133403364](DataStruct-Notes.assets/image-20200409133403364.png)
+
+最后一步，这时，所有位置p<i的元素都是较小元素，所有位置p>i的元素都是较大元素。
+
+#### 实现
+
+首先选取枢纽元，对源数组中left、right和center进行排序。这样使较小者分配在最左侧，较大者分配在最右侧，同时将center分配在right左侧一个位置，这样在分割阶段就可以将i和j初始化为left+1和right-2，进行指针移动。
+
+```cpp
+template <typename Comparable>
+const Comparable & median3(Vector<Comparable> & a, int left, int right){
+    // 三个数调整顺序 left，right，center
+    int center = (left + right)/2;
+    if(a[center] < a[left])
+        swap(a[center], a[left]);
+    if(a[right] < a[left])
+        swap(a[right], a[left]);
+    if(a[right] < a[center])
+        swap(a[right], a[center]);
+    
+    // place pivot at position right-1
+    swap(a[center], a[right-1]);
+    return a[right-1];
+}
+```
+
+然后进行分割和递归调用，注释部分是错误的，原因在于如果开始的i和j元素值都等于pivot会停止指针移动，从而程序陷入死循环。
+
+```cpp
+template <typename Comparable>
+void quickSort(Vector<Comparable> &a, int left, int right){
+    // 寻找枢纽元至少需要存在3个元素，所以小数组使用插入排序完成
+    if(left + 10 <= right){
+        // 根据左右界找到枢纽元素
+        Comparable pivot = median3(a, left, right);
+
+        // begin partitioning
+        // // 枢纽元素被交换到倒数第二个位置
+        // int i = left+1, j = right-2;
+        // for(; ;){
+        //     // 此时的left绝对小于等于pivot
+        //     // 左边i右边j，分别指向小于和大于pivot元素的值，非条件触发后交换之
+        //     while(a[i] < pivot){ ++i;}
+        //     while(pivot < a[j]){ --j;}
+        //     if(i<j)
+        //         swap(a[i], a[j]);
+        //     else
+        //         break;
+        // }
+
+        int i = left, j = right-1;
+        for(; ;){
+            // 此时的left绝对小于等于pivot
+            // 左边i右边j，分别指向小于和大于pivot元素的值，非条件触发后交换之
+            while(a[++i] < pivot){}
+            while(pivot < a[--j]){}
+            if(i<j)
+                swap(a[i], a[j]);
+            else
+                break;
+        }
+
+
+        // i指向的元素必然大于pivot 交换之
+        swap(a[i], a[right-1]);
+
+        // 递归执行左右子序列
+        quickSort(a, left, i-1);
+        quickSort(a, i+1, right);
+    }
+    else{
+        // Do an insertion sort on the subarray
+        insertionSort(a, left, right);
+    }
+}
+
+```
+
+**分析**
+
+假设不使用三数中值分割法选取枢纽元，而使用随机的，并且对元素个数不设置下限。和归并排序一样，取$T(0)=T(1)=1$, 快速排序的运行时间等于两个递归调用运行时间加上分割所耗费的线性时间：
+
+$T(N) = T(i) + T(N-i-1) +cN $, 其中i是分割后一个序列的元素个数。
+
+最坏情形下，枢纽元总是最小元素，i=0，那么：
+
+$T(N)=T(N-1)+cN, N>1$
+
+反复使用方程得到：
+
+![image-20200409223754749](DataStruct-Notes.assets/image-20200409223754749.png)
+
+最佳情形下，枢纽元正好位于中间，
+
+$T(N)=2T(N/2)+cN$, 用N去除两边，得到：
+
+$\frac{T(N)}{N} = \frac{T(N/2)}{N/2} +c$, 反复使用方程得到：
+
+![image-20200409224109816](DataStruct-Notes.assets/image-20200409224109816.png)
+
+叠加方程等到：![image-20200409224138443](DataStruct-Notes.assets/image-20200409224138443.png)
+
+平均情况下，分析比较困难，但是记住结果仍然是O(NlogN)。
+
+#### 解决选择问题
+
+可以修改快速排序以解决选择问题(selection problem)。查找集合S中第k个最小元的算法，并称之为快速选择(quick select)。其步骤如下：
+
+1.  如果S=1，那么k=1将S中元素返回。
+2.  选取枢纽元$v\in S$
+3.  将集合$S-\{v\}$ 分割为S1和S2
+4.  如果k<=S1, 那么第k个最小元在S1中，返回quickselect(S1,k)。如果k=1+S1，那么枢纽元就是第k个最小元。否则，第k个最小元就在S2中，它是S2中第k-S1-1个最小元，进行递归调用quickselect(S2, k-S1-1).
+
+
+
+### 间接排序
+
+基于算法的函数模板，如果要排序的Comparable对象很大，在移动和复制元素的时候就会降低效率。解决方案：设置一个指向Comparable的指针数组，重新排列这些指针，不必进行过多的中间复制操作，称之为中间置换(in-situ permutation)。
+
+定义一个Comparable数组，称之为copy
+
+### 外部排序
+
+
+
+## 图论
+
+### 定义
+
+图(graph)G=(V, E) 由顶点(vertex)的集合V和边(edge)的集合E构成。
