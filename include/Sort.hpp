@@ -88,6 +88,7 @@ void shellSort(Vector<Comparable> &a){
 template <typename Comparable>
 void heapSort(Vector<Comparable> & a){
     // build heap
+    // 最后一个非叶结点在n/2处，从此位置开始 依次向前下滤
     for(int i = a.size()/2; i>=0; --i)
         percolateDown(a, i, a.size());
     // sort // delet max

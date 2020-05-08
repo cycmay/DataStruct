@@ -127,6 +127,7 @@ void BinarySearchTree<Comparable>::insert(const Comparable & x,
                                             BinaryNode * & t) const{
     if(t == nullptr)
         t = new BinaryNode(x, nullptr, nullptr);
+        t->left = t->right = nullptr;
     else if(x < t->element)
         insert(x, t->left);
     else if(x > t->element)

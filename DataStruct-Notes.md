@@ -1215,6 +1215,43 @@ void BinarySearchTree<Comparable>::insert(const Comparable & x,
 
 如删除2结点，将其与右子树最小结点3交换，随后删除其在3号位置的结点，此时执行删除只有一个子结点的函数。
 
+```cpp
+template <typename Comparable>
+void BinarySearchTree<Comparable>::remove(const Comparable & x,
+                                          BinaryNode * & t) const{
+    if(t == nullptr)
+        return;
+//    find the Node
+    if(x < t->element)
+        remove(t->left);
+    if(x > t->element)
+        remove(t->right);
+    if(t->left == nullptr && t->right == nullptr){
+//        没有孩子结点
+        delete t;
+        t = nullptr;
+    }
+    if(t->left != nullptr || t->right != nullptr){
+//        有一个孩子结点 直接令指针修改 并释放原来的指针指向的内存空间
+        BinaryNode * oldNode = t;
+        t = (t->left != nullptr) ? t->left : t->right;
+        delete oldNode;
+    }
+    if(t->left != nullptr && t->right != nullptr){
+//        有两个孩子结点
+//        找到右子树最小元素结点
+//        这里存在缺点，寻找最小子结点和删除操作可以放在一起进行。
+        BinaryNode * min = findMin(t->right);
+//        交换min与当前结点
+        t->element = min->element;
+//        递归调用 删除min结点 min结点必然不包含左子树
+        remove(min->element, t->right);
+    }
+}
+```
+
+
+
 #### 删除树
 
 私有的makeEmpty()函数递归地处理t的子树，对t执行delete。最后root置NULL。
@@ -1997,4 +2034,367 @@ $\frac{T(N)}{N} = \frac{T(N/2)}{N/2} +c$, 反复使用方程得到：
 
 ### 定义
 
-图(graph)G=(V, E) 由顶点(vertex)的集合V和边(edge)的集合E构成。
+图(graph)G=(V, E) 由顶点(vertex)的集合V和边(edge)的集合E构成。每一条边就是点对(v，w)，其中v，w属于V，也称之为弧(arc)。如果点对是有序的，那么图就是有向图(digraph)。有时边还带有权(weight)或值(cost)。
+
+如果在无向图中从每个顶点到其他顶点都存在一条路径，则该无向图是连通的(connected)，具备这种性质的有向图称为强连通(strongly connected)。
+
+现实中图的模拟栗子有站点系统。
+
+![image-20200410220636520](DataStruct-Notes.assets/image-20200410220636520.png)
+
+表示图的简单方法有：
+
+1.  使用二维数组，称为邻接矩阵(adjacent matrix)表示法。对于每条边(u,v), 置A\[u\][v]=true;否则，置其为false。如果边存在权，置A\[u\][v]=weight；用无穷$\infty$表示不存在的边，或者使用0.
+
+    虽然这种方法表示简单，但是其空间需求为$\Theta(V^2)$。当图中的边不是很多时，称为稀疏的(sparse)，这种表示方法的代价就很大。
+
+2.  使用邻接表(adjacency list)，对每个顶点，使用一个链表存放所有邻接的顶点。此时空间需求为O(E+V), 它对于图的大小是线性的。
+
+一般而言，邻接矩阵只适用于顶点数目不太大的题目(不超过1000)。
+
+### 邻接表
+
+假设图G(V,E)的顶点编号为0,1,…,N-1，那么每个顶点都可能有若干条出边，把同一个顶点的出边放在一个列表中，N个顶点就会有N个列表(没有出边，对应空表)。这N个列表被称为图G的邻接表，记为Adj[N]。每两个顶点之间使用链表连接。例如
+
+![image-20200427155039935](DataStruct-Notes.assets/image-20200427155039935.png)
+
+有一种简单的方法实现邻接表：vector 可变长数组
+
+`vector<int> Adj[N]`
+
+对于带边权的顶点，使用Node结构体
+
+```cpp
+struct Node{
+	int v; // 边的终点编号
+	int w; // 边权
+}
+```
+
+### 遍历
+
+DFS：
+
+```cpp
+vector<int> Adj[MAXV];
+int n;
+bool vis[MAXV] = {false};
+
+void DFS(int u, int depth){
+	vis[u] = true; // 设置u已经被访问
+    for(int i = 0; i<Adj[u].size(); ++i){
+        int v = Adj[u][i];
+        if(vis[i] == false){
+            DFS(Adj[u][i], depth+1);
+        }
+    }
+    
+}
+void DFSTrave(){
+    for(int u = 0; u<n; ++u){
+        if(vis[u] == false){
+            DFS(u, i);
+        }
+    }
+}
+```
+
+BFS：
+
+```cpp
+vector<int> Adj[MAXV];
+int n;
+bool vis[MAXV] = {false};
+
+void BFS(int u){
+    queue<int> q;
+    q.push(u); // 将初始顶点入队
+    vis[u] = true;
+    while(!q.empty()){
+        int u = q.front();
+        q.pop();
+        for(int i =0; i<Adj[u].size(); ++i){
+            int v = Adj[u][i];
+            if(vis[v] == false){
+                q.push(v);
+                vis[v] = true;
+            }
+        }
+    }
+}
+
+void BFSTrave(){
+    for(int u=0; u<n; ++u){
+        if(vis[u]==false)
+            BFS(u);
+    }
+}
+```
+
+有时需要输出当前结点u所在层次号。
+
+设置结点结构：
+
+```cpp
+struct Node{
+	int v; // 顶点编号
+	int layer; // 顶点层次号
+}
+```
+
+
+
+### 拓扑排序
+
+拓扑排序(topological sort)是对有向无环图的顶点的排序，它使得如果存在一条从vi到vj的路径，那么排序中vj出现在vi的后面。
+
+简单的拓扑排序算法是：先找到任意一个没有入边的顶点，将其输出并将它和它的边从图中删除。对图的其余部分使用同样方法处理。
+
+```cpp
+void Graph::topsort(){
+	for(int counter = 0; counter < NUM_VERTICES; counter++){
+        Vertex x = findNewVertexOfIndegreeZero();
+        if(v == NOT_A_VERTEX)
+            throw CycleFoundException();
+        v.topNum = counter;
+        for each Vertex w adjacent to v
+            w.indegree--;
+        
+    }
+}
+```
+
+函数findNewVertexOfIndegreeZero()扫描数组，寻找尚未输出已排序的入度为0的顶点，如果不存在这样的顶点，说明当前图存在回路，报错。该函数是对顶点数组的简单顺序扫描，调用一次花费O(V)的时间，总计花费$O(V^2)$.
+
+![image-20200411092903002](DataStruct-Notes.assets/image-20200411092903002.png)
+
+如果图是稀疏，那么迭代期间只有少数顶点的入度被更新，但此时如果仍遍历每个顶点以搜索入度为0的顶点，就造成了大量的无用功。所以这里可以采用队列或栈，将第一个入度为0的顶点放入容器，随后将容器内pop出一个顶点，pop出的顶点邻接点入度均减1，入度变为0的邻接点再次放入容器，循环本步骤。
+
+![image-20200411095912865](DataStruct-Notes.assets/image-20200411095912865.png)
+
+优化后的算法耗费时间为O(E+V), for循环体内每条边最多执行一次，队列容器中对每个顶点最多操作一次。
+
+拓扑排序：
+
+```cpp
+void Graph::topsort(){
+	Queue<Vertex> q;
+    int counter = 0;
+    q.makeEmpty();
+    
+    for each Vertex v
+        if(v.indegree == 0)	
+            q.enqueue(v);
+   	while(!q.isEmpty()){
+        Vertex v = q.dequeue();
+        v.topNum = ++counter;
+        for each Vertex w adjacent to v
+            if(--w.indegree == 0)
+                q.enqueue(w);
+    }
+    if(counter != NUM_VERTICES)
+        throw CycleFoundException();
+}
+```
+
+### 最短路径算法
+
+输入一个加权图：每个顶点间联系的代价(权重)为$C_{i,j}$ , 一条路径$v_1 v_2 … v_N$的代价为$\sum_{i=1}^{N-1} {c_{i,i+1}}$, 称之为加权路径长(weighted path length)。
+
+**单源最短路径问题**
+
+给定一个加权图G=(V, E)和特定顶点s作为输入，找到从s到G中每个其他顶点的最短加权路径。
+
+#### 无权最短路径
+
+对于无权图G：
+
+![image-20200412101028827](DataStruct-Notes.assets/image-20200412101028827.png)
+
+使用广度优先搜索(breadth-first search)。该方法按层处理顶点：距离开始顶点最近的顶点首先被访问，最远的顶点则最后被访问。
+
+设置一个顶点含有三个变量，known-是否已经被访问，dv-距离开始顶点的位置，pv-本路径的上一个结点。变量初始值设置，除s外所有顶点均定义为不可到达值dv设置为无穷$\infty$, 而s本身路径长设置为0；known在顶点被处理后设置为true，此前均标记为false。
+
+![image-20200412103153440](DataStruct-Notes.assets/image-20200412103153440.png)
+
+算法伪代码：
+
+```cpp
+void Graph::unweighted(Vertex s){
+	for each Vertex v{
+        // 顶点与s的距离
+        v.dist = INFINITY;
+        // 顶点v是否被访问
+        v.known = false;
+    }
+    s.dist = 0;
+    
+    for(int currDist = 0; currDist < NUM_VERTICES; currDist++){
+        for each Vertex v{
+            // 遍历每个顶点 判断是否已经访问 并且当前遍历的层数是否等于即将访问顶点的路径长度记录
+            if(!v.known && v.dist==currDist){
+                v.known = true;
+                for each Vertex w adjacent to v{
+                    // 对该顶点的每个邻接点进行路径长度+1，记录其上一个顶点
+                    if(w.dist == INFINITY){
+                        w.dist = currDist+1;
+                        w.path = v;
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+算法描述：把距离d=0上的顶点声明为已读，随后对其邻接点距离记录+1，然后把距离d=1上的顶点声明为已读，再对其邻接点距离记录+1，依次类推。通过追溯pv记录的变量，可以显示实际的路径。
+
+分析：由于双层嵌套for循环，因此该算法运行时间为$O(V^2)$, 一些已经读过的点仍可能再次被判断一次。解决方案是，使用队列容器，在迭代开始时，队列放入所有距离为currDist的顶点，当访问顶点，并将其邻接点距离+1时，将邻接点加入队尾，这样就保证邻接点会在所有当前currDist的顶点访问完后访问。
+
+改进后：
+
+```cpp
+void Graph::unweighted(Vertex s){
+	Queue<Vertex> q;
+    for each Vertex v
+		v.dist = INFINITY;
+    s.dist = 0;
+    q.enqueue(s);
+    
+    while(!q.isEmpty()){
+        Vertex v = q.dequeue();
+        for each Vertex w adjacent to v
+          	if(w.dist == INFINITY){
+                w.dist = v.dist+1;
+                w.path = v;
+                q.enqueue(w);
+            }
+    }
+}
+```
+
+#### Dijkstra算法
+
+对于加权图的最短路径，一般使用Dijkstra算法，其解法是贪心算法(greedy algorithm)。
+
+贪心算法一般分阶段求解问题，Dijkstra算法在每个阶段选择一个顶点v，他在所有unknown顶点中具有最小的dv。
+
+![image-20200412133545564](DataStruct-Notes.assets/image-20200412133545564.png)
+
+初始化与无权最短路径算法方式一样：
+
+将第一个顶点的d设置为0，并标记known为False。
+
+![image-20200412154113348](DataStruct-Notes.assets/image-20200412154113348.png)
+
+选定第一个顶点后，标记known为true，随后对其邻接点属性进行调整，例v2和v4，更新其路径大小dv和上一个顶点pv。
+
+![image-20200412154622426](DataStruct-Notes.assets/image-20200412154622426.png)
+
+下一步选取标记known中最小dv的顶点v4，更新其邻接点数据
+
+![image-20200412154932967](DataStruct-Notes.assets/image-20200412154932967.png)
+
+下一步选取v2，其邻接点v4已经访问过，v5若经过v2后其dv=2+10大于原来的路径长，因此不用调整。
+
+![image-20200412155154312](DataStruct-Notes.assets/image-20200412155154312.png)
+
+依次选取v5，v3，v7，v6得到表：
+
+![image-20200412155255960](DataStruct-Notes.assets/image-20200412155255960.png)
+
+```cpp
+// 顶点数据结构
+struct Vertex{
+	List adj; // Adjacency list
+    bool known;
+    DistType dist; // DistType is probaly int
+    Vertex path; // Probaly Vertex *
+};
+```
+
+```cpp
+// Dijkstra算法
+void Graph::dijkstra(Vertex s){
+    for each Vertex v{
+        v.dist = INFINITY;
+        v.known = false;
+    }
+    
+    s.dist = 0;
+    for(; ;){
+        Vertex v = smallest unknown distance vertex;
+        if(v == NOT_A_VERTEX)
+            break;
+        v.known = true;
+        
+        for each Vertex w adjacent to v
+            if(!w.known)
+                if(v.dist + cvw < w.dist){
+                    // update w
+                    decrease(w.dist to v.dist+cvw);
+                    w.path = v;
+                }
+    }
+}
+```
+
+分析：
+在算法中扫描最小dv的操作将花费O(V)的时间，for循环的操作v次，所以整个算法扫描最小dv花费时间为$O(V^2)$, 更新dw时每条边至多更新一次，所以计为O(E)。算法总运行时间为$O(E+V^2)=O(V^2)$.
+
+如果图是稠密的，算法运行时间与边数呈线性关系；如果图是稀疏的，需要设计优先队列。
+
+对顶点v的选择使用deleteMin
+
+#### 关键路径
+
+
+
+#### 应用举例
+
+字梯游戏：在一系列的单词中，每个词都是前一个词改变一个字母形成的，例如：zero, hero, here, hire, fire, five。
+
+将其抽象为无权最短路径问题，每个词都是一个顶点，如果两个顶点可以通过一个字母代替，那么这两个顶点之间就存在为一条边。
+
+### 最小生成树
+
+Prim算法
+
+Kruskal算法
+
+### 深度优先搜索
+
+深度优先搜索(depth-first search), 从某个顶点v开始处理，然后递归地遍历所有v的邻接点。为了避免回路，当访问到一个顶点v的时候，标记该点已经访问过，对未标记的邻接点进行递归调用深度优先搜索。
+
+深度优先搜索算法伪代码：
+
+```cpp
+void Graph::dfs(Vertex v){
+    v.visited = true;
+    for each Vertex w adjacent to v
+		if(!w.visited)
+            dfs(w);
+}
+```
+
+该方法保证每条边只访问一次，所以使用邻接表，执行算法总时间为O(E+V).
+
+![image-20200413101344125](DataStruct-Notes.assets/image-20200413101344125.png)
+
+#### 欧拉回路
+
+
+
+
+
+## 算法设计
+
+### 贪心算法
+
+贪心算法(greedy algorithm)，在图论中有使用：Dijkstra算法、Prim算法、Kruskal算法，贪心算法分阶段工作，在每个阶段认为所做的决定是好的，不考虑后果。"眼下能够拿到的就拿"。我们希望局部最优就是全局最优，否则算法得到的为次最优解。贪心算法生成的不适最佳答案，而是近似答案。
+
+几个贪心算法栗子：
+
+找零钱，使用最少的钞票或者硬币，17美元61美分，10元钞票、5元钞票、两张1元钞票、两个25美分、一个10美分、一个1美分。
+
+交通，

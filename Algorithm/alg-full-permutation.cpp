@@ -1,8 +1,8 @@
 /* File Info 
  * Author:      cKrazy 
  * CreateTime:  4/15/2020, 5:25:12 PM 
- * LastEditor:  cKrazy 
- * ModifyTime:  4/15/2020, 5:25:13 PM 
+ * LastEditor:  cKrazy
+ * ModifyTime:  4/15/2020, 6:00:15 PM
  * Description: 
 */ 
 
@@ -35,17 +35,15 @@ void generateP(int index){
     // 找到未被标记的x
     for (x = 1; x<= n; x++)
     {
-        while (hashTable[x])
-        {
-            x++;
+        if(!(hashTable[x])){
+            // 将x放入P数组index位置，并标记 
+            P[index] = x;
+            hashTable[x] = true;
+            // 处理下一个位置index+1
+            generateP(index+1);
+            // 处理完后标记x未使用，使用下一个x
+            hashTable[x] = false;
         }
-        // 将x放入P数组index位置，并标记 
-        P[index] = x;
-        hashTable[x] = true;
-        // 处理下一个位置index+1
-        generateP(index+1);
-        // 处理完后标记x未使用，使用下一个x
-        hashTable[x] = false;
     }
     
 }
